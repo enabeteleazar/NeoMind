@@ -1,109 +1,107 @@
 #!/bin/bash
 
-# === Couleurs portables avec tput ===
-RED=$(tput setaf 1)
-GREEN=$(tput setaf 2)
-YELLOW=$(tput setaf 3)
-BLUE=$(tput setaf 4)
-NC=$(tput sgr0)
+# ==================== CONFIG =====================
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[0;33m'
+NC='\033[0m' # No Color
 
-# === Fonction spinner ===
-with_spinner() {
-  local cmd="$1"
-  local msg="$2"
-  echo -ne "${YELLOW}${msg}...${NC}"
-  bash -c "$cmd" > /dev/null 2>&1 &
-  local pid=$!
-  local spinner="/|\\-/"
-  local i=0
-  while kill -0 $pid 2>/dev/null; do
-    i=$(( (i+1) %4 ))
-    printf "\r${YELLOW}${msg}... ${spinner:$i:1}${NC}"
-    sleep 0.1
-  done
-  wait $pid
-  if [ $? -eq 0 ]; then
-    echo -e "\r${GREEN}${msg} : OK ✅${NC}"
-  else
-    echo -e "\r${RED}${msg} : ÉCHEC ❌${NC}"
-    exit 1
-  fi
+# =============== SPINNER INSTALLATION ============
+install_with_spinner() {
+    PACKAGE="$1"
+    CMD="$2"
+
+    echo -n "📦 Installation de ${PACKAGE} en cours..."
+
+    (
+        eval "${CMD}" &> /tmp/${PACKAGE}_install.log
+        echo $? > /tmp/${PACKAGE}_status
+    ) &
+
+    pid=$!
+    spin='-\|/'
+
+    i=0
+    while kill -0 $pid 2>/dev/null; do
+        i=$(( (i+1) %4 ))
+        printf "\r📦 Installation de ${PACKAGE} en cours... ${spin:$i:1}"
+        sleep 0.2
+    done
+
+    exit_code=$(cat /tmp/${PACKAGE}_status)
+
+    if [ "$exit_code" -eq 0 ]; then
+        printf "\r✅ ${PACKAGE} installé avec succès !          \n"
+    else
+        printf "\r❌ Échec de l’installation de ${PACKAGE}.\n"
+        echo "🪵 Consulte /tmp/${PACKAGE}_install.log pour les détails."
+        exit 1
+    fi
 }
 
-# === Vérifie sudo ===
-if [ "$EUID" -ne 0 ]; then
-  echo -e "${RED}❌ Ce script doit être exécuté en tant que root (sudo).${NC}"
-  exit 1
-fi
-
-# === Nettoyage des locks ===
-rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock
-rm -f /var/cache/apt/archives/lock /var/lib/apt/lists/lock
-
-# === Réparation du gestionnaire de paquets ===
-echo -ne "${YELLOW}🧰 Vérification de l'état du gestionnaire de paquets...${NC}"
-dpkg --configure -a > /dev/null 2>&1
-if [ $? -ne 0 ]; then
-  echo -e "\r${YELLOW}🧰 Problème détecté. Tentative de réparation avec apt...${NC}"
-  apt-get install -f -y > /dev/null 2>&1
-  dpkg --configure -a > /dev/null 2>&1
-  if [ $? -ne 0 ]; then
-    echo -e "\r${RED}🧰 Impossible de réparer automatiquement dpkg. Corrige manuellement avec :${NC}"
-    echo -e "${RED}   sudo dpkg --configure -a${NC}"
-    exit 1
-  else
-    echo -e "\r${GREEN}🧰 dpkg réparé avec succès après tentative ! ✅${NC}"
-  fi
+# ========== VÉRIFICATION dpkg & PRÉREQUIS ==========
+echo -e "\n${BLUE}🔎 Vérification de l'état du gestionnaire de paquets...${NC}"
+if sudo dpkg --configure -a --force-confdef --force-confold > /dev/null 2>&1; then
+    echo -e "${GREEN}✅ dpkg OK${NC}\n"
 else
-  echo -e "\r${GREEN}🧰 Gestionnaire de paquets OK ✅${NC}"
+    echo -e "${RED}❌ Échec de la correction dpkg${NC}"
+    exit 1
 fi
 
-# === Mise à jour système ===
-with_spinner "apt-get update -y && apt-get upgrade -y" "🔄 Mise à jour du système"
+# ================== MISE À JOUR ====================
+echo -e "${BLUE}🔧 Mise à jour du système...${NC}"
+sudo apt-get update -y > /dev/null 2>&1 &
+spinner_pid=$!
+spin='-\|/'
+i=0
+while kill -0 $spinner_pid 2>/dev/null; do
+    i=$(( (i+1) %4 ))
+    printf "\r🔄 Mise à jour... ${spin:$i:1}"
+    sleep 0.2
 
-# === curl ===
-if ! command -v curl &> /dev/null; then
-  with_spinner "apt-get install -y curl" "📥 Installation de curl"
-fi
+done
+printf "\r✅ Mise à jour terminée !           \n"
+sudo apt-get upgrade -y > /dev/null 2>&1
 
-# === Python & pip ===
-with_spinner "apt-get install -y python3 python3-pip python3-venv" "🐍 Installation de Python, pip et venv"
+# ============= PRÉREQUIS PACKAGES ================
+echo -e "\n${YELLOW}📦 Installation des paquets système...${NC}"
+sudo apt-get install -y python3 python3-pip python3-venv docker.io docker-compose openssh-server curl > /dev/null 2>&1
 
-# === Docker ===
-with_spinner "apt-get install -y docker.io docker-compose" "🐳 Installation de Docker & Compose"
+# ============ CONFIGURATION SSH ===================
+echo -e "\n${RED}🔐 Configuration de SSH...${NC}"
+sudo systemctl enable --now ssh
+sudo sed -i '/^#Port /c\Port 2222' /etc/ssh/sshd_config
+sudo sed -i '/^#PermitRootLogin /c\PermitRootLogin no' /etc/ssh/sshd_config
+sudo sed -i '/^#PasswordAuthentication /c\PasswordAuthentication no' /etc/ssh/sshd_config
+sudo systemctl restart ssh
 
-# === SSH ===
-with_spinner "apt-get install -y openssh-server" "🔐 Installation de SSH"
-with_spinner "systemctl enable --now ssh" "📡 Activation de SSH"
-
-# === Configuration sécurisée SSH ===
-echo "Port 2222" >> /etc/ssh/sshd_config
-echo "PermitRootLogin no" >> /etc/ssh/sshd_config
-echo "PasswordAuthentication no" >> /etc/ssh/sshd_config
-systemctl restart ssh
-
-# === Environnement Python ===
-echo -e "${YELLOW}📦 Création de l’environnement virtuel Python...${NC}"
+# ========== ENVIRONNEMENT PYTHON ==================
+echo -e "\n${GREEN}🐍 Création de l'environnement virtuel...${NC}"
 python3 -m venv jarvis-env
 source jarvis-env/bin/activate
- 
-# === Dépendances IA ===
-echo -e "${YELLOW}📦 Installation des bibliothèques IA...${NC}"
-pip install --upgrade pip > /dev/null
-pip install torch transformers fastapi uvicorn whisper > /dev/null
 
-# === Dockerfile ===
-echo -e "${YELLOW}⚙️ Création du Dockerfile...${NC}"
+# ======== INSTALLATION DÉPENDANCES IA ============
+echo -e "\n${YELLOW}📦 Installation des bibliothèques IA...${NC}"
+install_with_spinner "pip_upgrade" "pip install --upgrade pip"
+install_with_spinner "torch" "pip install torch"
+install_with_spinner "transformers" "pip install transformers"
+install_with_spinner "fastapi" "pip install fastapi"
+install_with_spinner "uvicorn" "pip install uvicorn"
+install_with_spinner "whisper" "pip install git+https://github.com/openai/whisper.git"
+
+# =============== DOCKERFILE =======================
+echo -e "\n${BLUE}📄 Création du Dockerfile...${NC}"
 cat <<EOF > Dockerfile
 FROM python:3.11-slim
-RUN pip install torch transformers fastapi uvicorn whisper
+RUN pip install torch transformers fastapi uvicorn git+https://github.com/openai/whisper.git
 COPY . /app
 WORKDIR /app
 CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
 EOF
 
-# === docker-compose.yml ===
-echo -e "${YELLOW}📂 Création du fichier docker-compose.yml...${NC}"
+# =========== DOCKER-COMPOSE =======================
+echo -e "\n${BLUE}🧩 Création de docker-compose.yml...${NC}"
 cat <<EOF > docker-compose.yml
 version: '3.8'
 services:
@@ -117,8 +115,9 @@ services:
     restart: always
 EOF
 
-# === Lancement de JARVIS ===
-with_spinner "docker-compose up -d" "🚀 Lancement de l’assistant JARVIS"
+# ================ LANCEMENT =======================
+echo -e "\n${GREEN}🚀 Lancement de l'assistant...${NC}"
+docker-compose up -d
 
-# === Fin ===
-echo -e "\n${GREEN}✨ Ton assistant JARVIS tourne maintenant sur http://localhost:8000 !${NC}\n"
+# ================== FIN ===========================
+echo -e "\n${GREEN}✨ Ton assistant JARVIS tourne maintenant en arrière-plan !${NC}\n"
