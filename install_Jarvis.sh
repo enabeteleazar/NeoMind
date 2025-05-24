@@ -1,7 +1,16 @@
 #!/bin/bash
 
-# Détection automatique de la prise en charge des couleurs
-if [ -t 1 ] && command -v tput >/dev/null 2>&1 && [ "$(tput colors)" -ge 8 ]; then
+# --- Gestion optionnelle des couleurs ---
+NO_COLOR=0
+for arg in "$@"; do
+  if [[ "$arg" == "--no-color" ]]; then
+    NO_COLOR=1
+    shift
+    break
+  fi
+done
+
+if [[ $NO_COLOR -eq 0 ]] && [ -t 1 ] && command -v tput >/dev/null 2>&1 && [ "$(tput colors)" -ge 8 ]; then
     RED='\033[0;31m'
     GREEN='\033[0;32m'
     BLUE='\033[0;34m'
@@ -15,74 +24,81 @@ else
     NC=''
 fi
 
+# --- Spinner amélioré ---
 spinner() {
     local pid=$1
     local delay=0.1
-    local spinstr='|/-\'
+    local spinstr='|/-\\'
     while ps -p "$pid" > /dev/null 2>&1; do
-        local temp=${spinstr#?}
-        printf " [%c]  " "$spinstr"
-        spinstr=$temp${spinstr%"$temp"}
+        printf " [%c]  " "${spinstr:0:1}"
+        spinstr=${spinstr:1}${spinstr:0:1}
         sleep $delay
         printf "\b\b\b\b\b\b"
     done
-    printf "      \b\b\b\b\b\b"
+    printf "       \b\b\b\b\b\b\b"
+}
+
+# --- Fonction pour exécuter une commande avec spinner + vérification ---
+run_with_spinner() {
+    local cmd=$1
+    local msg=$2
+    echo -e "${BLUE}${msg}${NC}"
+    bash -c "$cmd" > /dev/null 2>&1 &
+    local pid=$!
+    spinner $pid
+    wait $pid
+    local status=$?
+    if [ $status -ne 0 ]; then
+      echo -e "${RED}❌ Échec : $msg${NC}"
+      exit $status
+    else
+      echo -e "${GREEN}✅ Succès : $msg${NC}"
+    fi
 }
 
 clear
 
-echo -e "\n${BLUE}🔧 Vérification et correction de l'état du gestionnaire de paquets...${NC}\n"
-if sudo dpkg --configure -a > /dev/null 2>&1; then
-    echo -e "${GREEN}✅ Gestionnaire de paquets opérationnel.${NC}"
-else
-    echo -e "${RED}❌ Erreur détectée, tentative de correction...${NC}"
-    sudo dpkg --configure -a > /dev/null 2>&1 &
-    spinner $!
-fi
+# --- Début du script ---
+echo
 
-echo -e "\n${BLUE}🔧 Mise à jour du système...${NC}\n"
-sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq -o=Dpkg::Progress-Fancy="1" > /dev/null 2>&1 &
-spinner $!
-sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -qq -o=Dpkg::Progress-Fancy="1" > /dev/null 2>&1 &
-spinner $!
+run_with_spinner "sudo dpkg --configure -a" "🔧 Vérification et correction de l'état du gestionnaire de paquets..."
 
-echo -e "\n${YELLOW}🐍 Installation de Python et pip...${NC}\n"
-sudo apt-get install -y -qq python3 python3-pip python3-venv > /dev/null 2>&1 &
-spinner $!
+run_with_spinner "sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq -o=Dpkg::Progress-Fancy=\"1\"" "🔧 Mise à jour du système (apt-get update)..."
+run_with_spinner "sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -qq -o=Dpkg::Progress-Fancy=\"1\"" "🔧 Mise à jour du système (apt-get upgrade)..."
 
-echo -e "\n${YELLOW}📦 Installation de curl si nécessaire...${NC}\n"
+run_with_spinner "sudo apt-get install -y -qq python3 python3-pip python3-venv" "🐍 Installation de Python et pip..."
+
 if ! command -v curl >/dev/null 2>&1; then
-    sudo apt-get install -y -qq curl > /dev/null 2>&1 &
-    spinner $!
+  run_with_spinner "sudo apt-get install -y -qq curl" "📦 Installation de curl..."
+else
+  echo -e "${GREEN}✅ curl est déjà installé.${NC}"
 fi
 
-echo -e "\n${RED}🐳 Installation de Docker...${NC}\n"
-sudo apt-get install -y -qq docker.io docker-compose > /dev/null 2>&1 &
-spinner $!
+run_with_spinner "sudo apt-get install -y -qq docker.io docker-compose" "🐳 Installation de Docker..."
 
-echo -e "\n${GREEN}📦 Création de l’environnement virtuel Python...${NC}\n"
-python3 -m venv jarvis-env
-source jarvis-env/bin/activate
+echo -e "${GREEN}📦 Création de l’environnement virtuel Python...${NC}"
+python3 -m venv jarvis-env || { echo -e "${RED}❌ Échec création environnement virtuel${NC}"; exit 1; }
+source jarvis-env/bin/activate || { echo -e "${RED}❌ Échec activation environnement virtuel${NC}"; exit 1; }
 
-echo -e "\n${YELLOW}📦 Installation des dépendances IA...${NC}\n"
-pip install --upgrade pip > /dev/null 2>&1 &
-spinner $!
-pip install --default-timeout=100 --timeout=100 --retries=10 torch transformers fastapi uvicorn whisper > /dev/null 2>&1 &
-spinner $!
+run_with_spinner "pip install --upgrade pip" "📦 Mise à jour de pip..."
 
-echo -e "\n${RED}🔐 Installation et configuration de SSH...${NC}\n"
-sudo apt-get install -y -qq openssh-server > /dev/null 2>&1
-sudo systemctl enable --now ssh > /dev/null 2>&1
+run_with_spinner "pip install --default-timeout=100 --timeout=100 --retries=10 torch transformers fastapi uvicorn whisper" "📦 Installation des dépendances IA..."
 
-echo -e "\n${GREEN}🔧 Configuration avancée de SSH...${NC}\n"
-{
-  echo "Port 2222"
-  echo "PermitRootLogin no"
-  echo "PasswordAuthentication no"
-} | sudo tee -a /etc/ssh/sshd_config > /dev/null
-sudo systemctl restart ssh > /dev/null 2>&1
+# SSH Installation/configuration silencieuse
+echo -e "${RED}🔐 Installation et configuration de SSH...${NC}"
+sudo apt-get install -y -qq openssh-server > /dev/null 2>&1 || { echo -e "${RED}❌ Échec installation SSH${NC}"; exit 1; }
+sudo systemctl enable --now ssh > /dev/null 2>&1 || { echo -e "${RED}❌ Échec activation SSH${NC}"; exit 1; }
 
-echo -e "\n${BLUE}📂 Création du fichier Dockerfile...${NC}\n"
+# Configuration SSH sécurisée (ajoute uniquement si absente)
+SSH_CONFIG_LINES=("Port 2222" "PermitRootLogin no" "PasswordAuthentication no")
+for line in "${SSH_CONFIG_LINES[@]}"; do
+  if ! sudo grep -qF "$line" /etc/ssh/sshd_config; then
+    echo "$line" | sudo tee -a /etc/ssh/sshd_config > /dev/null
+  fi
+done
+sudo systemctl restart ssh > /dev/null 2>&1 || { echo -e "${RED}❌ Échec redémarrage SSH${NC}"; exit 1; }
+
+echo -e "${BLUE}📂 Création du fichier Dockerfile...${NC}"
 cat <<EOF > Dockerfile
 # Image de base Python
 FROM python:3.11-slim
@@ -100,7 +116,7 @@ WORKDIR /app
 CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
 EOF
 
-echo -e "\n${YELLOW}📂 Création du fichier docker-compose.yml...${NC}\n"
+echo -e "${YELLOW}📂 Création du fichier docker-compose.yml...${NC}"
 cat <<EOF > docker-compose.yml
 version: '3.8'
 
@@ -115,10 +131,10 @@ services:
     restart: always
 EOF
 
-echo -e "\n${GREEN}✅ Installation terminée !${NC}\n"
+echo -e "${GREEN}✅ Installation terminée !${NC}"
 
-echo -e "\n${RED}🚀 Lancement automatique de ton assistant...${NC}\n"
-docker-compose up -d > /dev/null 2>&1 &
-spinner $!
+run_with_spinner "docker-compose up -d" "🚀 Lancement automatique de ton assistant..."
 
-echo -e "\n${BLUE}✨ Ton assistant JARVIS tourne maintenant en arrière-plan !${NC}\n"
+echo -e "${BLUE}✨ Ton assistant JARVIS tourne maintenant en arrière-plan !${NC}"
+echo
+
