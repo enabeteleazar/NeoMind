@@ -1,41 +1,38 @@
-.PHONY: install run build stop restart clean logs status
+# Makefile pour Jarvis
 
-# 🔧 Exécute le script d'installation complet
+# Variables
+SCRIPT=install_jarvis.sh
+ENV_DIR=jarvis-env
+
+.PHONY: help install clean start stop restart logs
+
+help:
+	@echo "Usage:"
+	@echo "  make install       # Exécute le script d'installation complet"
+	@echo "  make clean         # Supprime l'environnement virtuel et les containers Docker"
+	@echo "  make start         # Démarre le container Docker Jarvis"
+	@echo "  make stop          # Arrête le container Docker Jarvis"
+	@echo "  make restart       # Redémarre le container Docker Jarvis"
+	@echo "  make logs          # Affiche les logs du container Jarvis"
+
 install:
-	@echo "🔧 Lancement du script d'installation de Jarvis..."
-	bash install_jarvis.sh
+	@chmod +x $(SCRIPT)
+	@./$(SCRIPT)
 
-# 🚀 Lance Jarvis en arrière-plan via Docker
-run:
-	@echo "🚀 Démarrage de Jarvis..."
-	docker-compose up -d
-
-# 🧱 Rebuild les conteneurs Docker (utile si tu modifies ton code ou Dockerfile)
-build:
-	@echo "🔄 Reconstruction de l’image Docker..."
-	docker-compose build
-
-# 🛑 Stoppe Jarvis
-stop:
-	@echo "🛑 Arrêt de Jarvis..."
-	docker-compose down
-
-# 🔁 Redémarre le conteneur Jarvis
-restart:
-	@echo "🔁 Redémarrage de Jarvis..."
-	docker-compose down && docker-compose up -d
-
-# 🧹 Nettoie tous les conteneurs, images et volumes (⚠️ Destructif)
 clean:
-	@echo "🧹 Nettoyage complet Docker..."
-	docker-compose down -v --rmi all --remove-orphans
+	@echo "🧹 Suppression de l'environnement virtuel et des containers Docker..."
+	@rm -rf $(ENV_DIR)
+	@docker-compose down --volumes --remove-orphans
 
-# 📜 Affiche les logs de Jarvis en direct
+start:
+	@echo "🚀 Démarrage du container Jarvis..."
+	@docker-compose up -d
+
+stop:
+	@echo "⏹️ Arrêt du container Jarvis..."
+	@docker-compose stop
+
+restart: stop start
+
 logs:
-	@echo "📜 Affichage des logs..."
-	docker-compose logs -f
-
-# 📊 Montre l’état des conteneurs Docker
-status:
-	@echo "📊 État des conteneurs Docker..."
-	docker ps -a
+	@docker logs -f jarvis
