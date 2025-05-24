@@ -32,7 +32,7 @@ install_with_spinner() {
     exit_code=$(cat /tmp/${PACKAGE}_status)
 
     if [ "$exit_code" -eq 0 ]; then
-        printf "\r✅ ${PACKAGE} installé avec succès !          \n"
+        printf "\r${GREEN}✅ ${PACKAGE} installé avec succès !          \n"
     else
         printf "\r❌ Échec de l’installation de ${PACKAGE}.\n"
         echo "🪵 Consulte /tmp/${PACKAGE}_install.log pour les détails."
@@ -61,7 +61,7 @@ while kill -0 $spinner_pid 2>/dev/null; do
     sleep 0.2
 
 done
-printf "\r✅ Mise à jour terminée !           \n"
+printf "\r${GREEN}✅ Mise à jour terminée !           \n"
 sudo apt-get upgrade -y > /dev/null 2>&1
 
 # ============= PRÉREQUIS PACKAGES ================
