@@ -24,6 +24,8 @@ else
     NC=''
 fi
 
+echo
+
 spinner() {
     local pid=$1
     local delay=0.1
