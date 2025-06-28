@@ -5,7 +5,8 @@
 clear
 
 # --- Détection automatique de la prise en charge des couleurs ---
-if [ $NO_COLOR -eq 0 ] && [ -t 1 ] && command -v tput >/dev/null 2>&1 && [ "$(tput colors)" -ge 8 ]; then
+NO_COLOR=0
+if [ "${NO_COLOR:-0}" -eq 0 ] && [ -t 1 ] && command -v tput >/dev/null 2>&1 && [ "$(tput colors)" -ge 8 ]; then
     RED='\033[0;31m'
     GREEN='\033[0;32m'
     BLUE='\033[0;34m'
@@ -58,10 +59,10 @@ install_jarvis() {
     sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -qq > /dev/null 2>&1 &
     spinner $!
     echo -e "${GREEN}✅ apt-get upgrade terminé.${NC}"
-    echo -e "${BLUE}🔧 Installation / mise à jour de JARVIS...${NC}"
+    echo -e "\n${BLUE}lation / mise à jour de JARVIS...${NC}"
 
 ## ---  INSTALL PYTHON & PIP / DOCKER
-    sudo apt-get install -y -qq python3 python3-pip python3-venv curl docker.io docker-compose openssh-server > /dev/null 2>&1 &
+    sudo apt-get install -y -qq python3 python3-pip python3-venv curl docker.io docker-compose > /dev/null 2>&1 &
     spinner $!
     echo -e "${GREEN}✅ Dépendances installés.${NC}"
 
@@ -93,16 +94,6 @@ install_jarvis() {
         echo -e "${RED}❌ Docker Compose n'est PAS installé correctement.${NC}"
     fi
 
-# Vérification du conteneur
-if docker ps | grep -q jarvis; then
-    echo -e "${GREEN}✅ Le conteneur JARVIS tourne correctement.${NC}"
-else
-    echo -e "${RED}❌ Le conteneur JARVIS ne tourne PAS.${NC}"
-    echo -e "${YELLOW}🔄 Tentative de redémarrage...${NC}"
-    docker-compose up -d
-fi
-
-
     # Création et activation du venv
     echo -e "${GREEN}📦 Création de l’environnement virtuel Python...${NC}"
     python3 -m venv jarvis-env
@@ -115,7 +106,7 @@ fi
     spinner $!
     echo -e "${GREEN}✅ pip mis à jour.${NC}"
 
-    pip install --default-timeout=100 --timeout=100 --retries=10 torch transformers openai-whisper fastapi uvicorn > /dev/null 2>&1 &
+    pip install --default-timeout=100 --timeout=100 --retries=10 torch transformers openai-whisper fastapi uvicorn ffmpeg > /dev/null 2>&1 &
     spinner $!
     echo -e "${GREEN}✅ Bibliothèques Python installées.${NC}"
 
@@ -141,6 +132,7 @@ fi
     echo -e "${BLUE}📂 Création du Dockerfile...${NC}"
     cat <<EOF > Dockerfile
 FROM python:3.11-slim
+RUN apt-get update && apt-get install -y ffmpeg
 RUN pip install --no-cache-dir \\
     torch \\
     transformers \\
@@ -169,6 +161,7 @@ services:
     restart: always
 EOF
 echo -e "${GREEN}✅ docker-compose.yml créé.${NC}"
+
 
     # Création server.py
     echo -e "${BLUE}📄 Création de server.py...${NC}"
@@ -237,13 +230,22 @@ echo -e "${GREEN}✅ server.py créé.${NC}"
     spinner $!
     echo -e "${GREEN}✅ Docker-compose lancé avec succès.${NC}"
 
+    # Vérification du conteneur
+    if docker ps | grep -q jarvis; then
+        echo -e "${GREEN}✅ Le conteneur JARVIS tourne correctement.${NC}"
+    else
+        echo -e "${RED}❌ Le conteneur JARVIS ne tourne PAS.${NC}"
+        echo -e "${YELLOW}🔄 Tentative de redémarrage...${NC}"
+        docker-compose up -d
+    fi
+
     # Vérification de l'accès à l'API
-if curl -s http://localhost:8000 | grep -q "Jarvis"; then
-    echo -e "${GREEN}✅ API JARVIS accessible sur http://localhost:8000${NC}"
-else
-    echo -e "${RED}❌ API JARVIS inaccessible.${NC}"
-    echo -e "${YELLOW}🔄 Vérifie les logs avec :${NC} docker logs jarvis"
-fi
+    if curl -s http://localhost:8000 | grep -q "Jarvis"; then
+        echo -e "${GREEN}✅ API JARVIS accessible sur http://localhost:8000${NC}"
+    else
+        echo -e "${RED}❌ API JARVIS inaccessible.${NC}"
+        echo -e "${YELLOW}🔄 Vérifie les logs avec :${NC} docker logs jarvis"
+    fi
 
 echo -e "\n${GREEN}🎉 Installation et validation terminées !${NC}\n"
 
@@ -301,6 +303,16 @@ check_jarvis() {
 
     echo -e "\n🧪 Fin des vérifications."
 }
+
+
+# --- Appel direct depuis la ligne de commande ou Make ---
+if [[ "$1" == "install" ]]; then
+    install_jarvis
+    exit 0
+elif [[ "$1" == "check" ]]; then
+    check_jarvis
+    exit 0
+fi
 
 # --- Menu ---
 while true; do

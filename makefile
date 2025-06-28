@@ -17,16 +17,16 @@ help:
 	@echo "  make restart        # Redémarre le container Docker Jarvis"
 	@echo "  make logs           # Affiche les logs du container Jarvis"
 	@echo "  make build          # Reconstruit l'image Docker Jarvis"
-	@echo "  make test           # Exécute les tests unitaires avec pytest"
+	@echo "  make check          # Exécute les tests unitaires avec pytest"
 	@echo "  make lint           # Analyse le code avec flake8"
 
 install:
 	@chmod +x $(SCRIPT)
-	@bash $(SCRIPT)
+	@bash $(SCRIPT) install
 
 install-nc:
 	@chmod +x $(SCRIPT)
-	@bash $(SCRIPT) --no-color
+	@bash $(SCRIPT) install --no-color
 
 clean:
 	@echo "🧹 Suppression de l'environnement virtuel et des containers Docker..."
@@ -50,9 +50,9 @@ build:
 	@echo "🔧 Reconstruction de l'image Docker Jarvis..."
 	@$(DOCKER_COMPOSE_CMD) build
 
-test:
-	@echo "🧪 Lancement des tests avec pytest..."
-	@pytest tests/
+check:
+	@chmod +x $(SCRIPT)
+	@bash $(SCRIPT) check
 
 lint:
 	@echo "🔍 Analyse du code avec flake8..."
