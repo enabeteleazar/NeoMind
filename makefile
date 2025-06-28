@@ -3,8 +3,9 @@
 # Variables
 SCRIPT=install_jarvis.sh
 ENV_DIR=jarvis-env
+DOCKER_COMPOSE_CMD := $(shell command -v docker-compose >/dev/null 2>&1 && echo docker-compose || echo docker compose)
 
-.PHONY: help install install-nc clean start stop restart logs test lint
+.PHONY: help install install-nc clean start stop restart logs build test lint
 
 help:
 	@echo "Usage:" 
@@ -15,6 +16,7 @@ help:
 	@echo "  make stop           # Arrête le container Docker Jarvis"
 	@echo "  make restart        # Redémarre le container Docker Jarvis"
 	@echo "  make logs           # Affiche les logs du container Jarvis"
+	@echo "  make build          # Reconstruit l'image Docker Jarvis"
 	@echo "  make test           # Exécute les tests unitaires avec pytest"
 	@echo "  make lint           # Analyse le code avec flake8"
 
@@ -29,20 +31,24 @@ install-nc:
 clean:
 	@echo "🧹 Suppression de l'environnement virtuel et des containers Docker..."
 	@rm -rf $(ENV_DIR)
-	@docker-compose down --volumes --remove-orphans
+	@$(DOCKER_COMPOSE_CMD) down --volumes --remove-orphans
 
 start:
 	@echo "🚀 Démarrage du container Jarvis..."
-	@docker-compose up -d
+	@$(DOCKER_COMPOSE_CMD) up -d
 
 stop:
-	@echo "⏹️ Arrêt du container Jarvis..."
-	@docker-compose stop
+	@echo "⏹️  Arrêt du container Jarvis..."
+	@$(DOCKER_COMPOSE_CMD) stop
 
 restart: stop start
 
 logs:
-	@docker logs -f jarvis
+	@$(DOCKER_COMPOSE_CMD) logs -f jarvis
+
+build:
+	@echo "🔧 Reconstruction de l'image Docker Jarvis..."
+	@$(DOCKER_COMPOSE_CMD) build
 
 test:
 	@echo "🧪 Lancement des tests avec pytest..."
