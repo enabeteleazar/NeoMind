@@ -67,7 +67,7 @@ install_jarvis() {
     echo -e "${GREEN}✅ Dépendances installés.${NC}"
 
 ## ---  INSTALL CURL
-    echo -e "${YELLOW}📦 Vérification de curl...${NC}"
+    echo -e "\n${YELLOW}📦 Vérification de curl...${NC}"
     if ! command -v curl >/dev/null 2>&1; then
         sudo apt-get install -y -qq curl > /dev/null 2>&1 &
         spinner $!
@@ -82,9 +82,9 @@ install_jarvis() {
 ## ---  INSTALL DOCKER.IO && DOCKER-COMPOSE
     # Vérification de Docker
     if command -v docker >/dev/null 2>&1; then
-        echo -e "${GREEN}✅ Docker est installé.${NC}"
+        echo -e "\n${GREEN}✅ Docker est installé.${NC}"
     else
-        echo -e "${RED}❌ Docker n'est PAS installé correctement.${NC}"
+        echo -e "\n${RED}❌ Docker n'est PAS installé correctement.${NC}"
     fi
 
     # Vérification de Docker Compose
@@ -95,13 +95,13 @@ install_jarvis() {
     fi
 
     # Création et activation du venv
-    echo -e "${GREEN}📦 Création de l’environnement virtuel Python...${NC}"
+    echo -e "\n${GREEN}📦 Création de l’environnement virtuel Python...${NC}"
     python3 -m venv jarvis-env
     source jarvis-env/bin/activate
     echo -e "${GREEN}✅ Environnement virtuel activé.${NC}"
 
     # Installation des paquets Python
-    echo -e "${YELLOW}📦 Installation des bibliothèques Python...${NC}"
+    echo -e "\n${YELLOW}📦 Installation des bibliothèques Python...${NC}"
     pip install --upgrade pip > /dev/null 2>&1 &
     spinner $!
     echo -e "${GREEN}✅ pip mis à jour.${NC}"
@@ -111,7 +111,7 @@ install_jarvis() {
     echo -e "${GREEN}✅ Bibliothèques Python installées.${NC}"
 
     # Configuration SSH
-    echo -e "${RED}🔐 Installation et configuration de SSH...${NC}"
+    echo -e "\n${RED}🔐 Installation et configuration de SSH...${NC}"
     sudo apt-get install -y -qq openssh-server > /dev/null 2>&1 &
     spinner $!
     echo -e "${GREEN}✅ SSH installé.${NC}"
@@ -129,7 +129,7 @@ install_jarvis() {
     echo -e "${GREEN}✅ Configuration SSH appliquée.${NC}"
 
     # Création Dockerfile
-    echo -e "${BLUE}📂 Création du Dockerfile...${NC}"
+    echo -e "\n${BLUE}📂 Création du Dockerfile...${NC}"
     cat <<EOF > Dockerfile
 FROM python:3.11-slim
 RUN apt-get update && apt-get install -y ffmpeg
@@ -164,7 +164,7 @@ echo -e "${GREEN}✅ docker-compose.yml créé.${NC}"
 
 
     # Création server.py
-    echo -e "${BLUE}📄 Création de server.py...${NC}"
+    echo -e "\n${BLUE}📄 Création de server.py...${NC}"
     cat > server.py << 'EOF'
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
@@ -225,7 +225,7 @@ EOF
 echo -e "${GREEN}✅ server.py créé.${NC}"
 
     # Lancement docker-compose
-    echo -e "${RED}🚀 Lancement de l’assistant...${NC}"
+    echo -e "\n${RED}🚀 Lancement de l’assistant...${NC}"
     docker-compose up -d > /dev/null 2>&1 &
     spinner $!
     echo -e "${GREEN}✅ Docker-compose lancé avec succès.${NC}"
@@ -249,7 +249,7 @@ echo -e "${GREEN}✅ server.py créé.${NC}"
 
 echo -e "\n${GREEN}🎉 Installation et validation terminées !${NC}\n"
 
-    echo -e "${BLUE}✅ Installation et lancement terminés.${NC}"
+    echo -e "\n${BLUE}✅ Installation et lancement terminés.${NC}"
     echo -e "${BLUE}✨ Ton assistant JARVIS tourne maintenant en arrière-plan !${NC}"
     echo -e "${BLUE}👉 Accède à http://localhost:8000 ou http://<IP_de_ton_serveur>:8000${NC}"
 }
