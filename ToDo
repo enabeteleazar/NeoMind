@@ -1,0 +1,11 @@
+🔍 SECTION INSTALL:
+
+✅ Ajouter un QR code vers l'IP du serveur pour l'ouvrir facilement depuis mobile ?
+
+✅ Ajouter un test automatique de curl http://localhost:8000/docs pour tester la doc Swagger ?
+
+✅ Ajouter un résumé sous forme de tableau en ASCII à la fin ?
+(ex: statut Docker, status SSH, version de Python, etc.)
+
+
+🔍 SECTION CHECK:
