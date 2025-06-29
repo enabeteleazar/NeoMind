@@ -168,6 +168,7 @@ echo -e "${GREEN}✅ docker-compose.yml créé.${NC}"
     cat > server.py << 'EOF'
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 import uvicorn
 import whisper
 from transformers import pipeline
@@ -184,6 +185,10 @@ whisper_model = whisper.load_model("base")
 
 print("🧠 Chargement du pipeline Transformers (analyse de sentiment)...")
 nlp_model = pipeline("sentiment-analysis")
+
+# --- Modèle de données pour la requête POST analyse ---
+class TextInput(BaseModel):
+    text: str
 
 # --- Route racine ---
 @app.get("/")
@@ -209,18 +214,28 @@ async def transcribe_audio(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- Route d’analyse de texte ---
+# --- Route d’analyse de texte (POST JSON) ---
 @app.post("/analyze")
-async def analyze_text(text: str):
+async def analyze_text_post(input: TextInput):
+    try:
+        result = nlp_model(input.text)
+        return {"analysis": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- Route d’analyse de texte (GET URL param) ---
+@app.get("/analyze")
+async def analyze_text_get(text: str):
     try:
         result = nlp_model(text)
         return {"analysis": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- Exécution directe pour développement ---
+# --- Lancement local pour dev ---
 if __name__ == "__main__":
     uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)
+
 EOF
 echo -e "${GREEN}✅ server.py créé.${NC}"
 
