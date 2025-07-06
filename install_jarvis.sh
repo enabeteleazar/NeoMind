@@ -131,15 +131,15 @@ install_jarvis() {
     # Création Dockerfile
     echo -e "\n${BLUE}📂 Création du Dockerfile...${NC}"
     cat <<EOF > Dockerfile
-FROM python:3.11-slim
-RUN apt-get update && apt-get install -y ffmpeg
-RUN pip install --no-cache-dir \\
-    torch \\
-    transformers \\
-    openai-whisper \\
-    fastapi \\
-    uvicorn \\
-    python-multipart
+RUN pip install --no-cache-dir \
+    torch \
+    transformers \
+    openai-whisper \
+    fastapi \
+    uvicorn \
+    python-multipart \
+    pydantic
+
 COPY . /app
 WORKDIR /app
 CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
@@ -186,9 +186,12 @@ whisper_model = whisper.load_model("base")
 print("🧠 Chargement du pipeline Transformers (analyse de sentiment)...")
 nlp_model = pipeline("sentiment-analysis")
 
-# --- Modèle de données pour la requête POST analyse ---
-class TextInput(BaseModel):
-    text: str
+print("💬 Chargement du modèle de génération de texte...")
+chatbot_model = pipeline("text-generation", model="tiiuae/falcon-7b-instruct", tokenizer="tiiuae/falcon-7b-instruct")
+
+# --- Modèle Pydantic pour le chat ---
+class Message(BaseModel):
+    message: str
 
 # --- Route racine ---
 @app.get("/")
@@ -214,28 +217,29 @@ async def transcribe_audio(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- Route d’analyse de texte (POST JSON) ---
+# --- Route d’analyse de texte ---
 @app.post("/analyze")
-async def analyze_text_post(input: TextInput):
-    try:
-        result = nlp_model(input.text)
-        return {"analysis": result}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-# --- Route d’analyse de texte (GET URL param) ---
-@app.get("/analyze")
-async def analyze_text_get(text: str):
+async def analyze_text(text: str):
     try:
         result = nlp_model(text)
         return {"analysis": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- Lancement local pour dev ---
+# --- Route de discussion texte ---
+@app.post("/chat")
+async def chat(msg: Message):
+    try:
+        prompt = msg.message
+        output = chatbot_model(prompt, max_new_tokens=100, do_sample=True, temperature=0.7)
+        response_text = output[0]["generated_text"]
+        return {"response": response_text.strip()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- Exécution directe pour développement ---
 if __name__ == "__main__":
     uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)
-
 EOF
 echo -e "${GREEN}✅ server.py créé.${NC}"
 
