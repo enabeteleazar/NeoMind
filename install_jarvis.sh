@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# v1.0.0
 
 # --- Nettoyage écran (clear)
 clear
