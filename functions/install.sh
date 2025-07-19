@@ -1,9 +1,10 @@
 #!/bin/bash
 
 # ---- Étapes d’installation ----
+clear
 
 verif_dpkg() {
-  echo -e "${BLUE}🔧 Vérification de l’état du gestionnaire de paquets...${NC}"
+  echo -e "${BLUE}🔧 Vérification du gestionnaire de paquets...${NC}"
   if sudo dpkg --configure -a > /dev/null 2>&1; then
     echo -e "${GREEN}✅ Gestionnaire OK.${NC}"
   else
@@ -12,6 +13,7 @@ verif_dpkg() {
     spinner $!
     echo -e "${GREEN}✅ Correction effectuée.${NC}"
   fi
+  echo ""
 }
 
 update_system() {
@@ -23,12 +25,15 @@ update_system() {
   sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -qq > /dev/null 2>&1 &
   spinner $!
   echo -e "${GREEN}✅ upgrade terminé.${NC}"
+    echo ""
 }
 
 install_dependance() {
+  echo -e "${BLUE}📦 Installation des dependances...${NC}"
   sudo apt-get install -y -qq python3 python3-pip python3-venv curl docker.io docker-compose > /dev/null 2>&1 &
   spinner $!
   echo -e "${GREEN}✅ Dépendances installées.${NC}"
+  echo ""
 }
 
 verif_curl() {
@@ -40,6 +45,7 @@ verif_curl() {
   else
     echo -e "${GREEN}✅ curl déjà présent.${NC}"
   fi
+  echo ""
 }
 
 install_docker() {
@@ -55,6 +61,7 @@ install_docker() {
   else
     echo -e "${RED}❌ Docker Compose n'est PAS installé.${NC}"
   fi
+  echo ""
 }
 
 activ_env() {
@@ -62,6 +69,7 @@ activ_env() {
   python3 -m venv neo-env
   source neo-env/bin/activate
   echo -e "${GREEN}✅ Environnement virtuel activé.${NC}"
+  echo ""
 }
 
 install_pkg_python() {
@@ -73,49 +81,22 @@ install_pkg_python() {
   pip install --default-timeout=100 --timeout=100 --retries=10 torch transformers openai-whisper fastapi uvicorn ffmpeg > /dev/null 2>&1 &
   spinner $!
   echo -e "${GREEN}✅ Bibliothèques Python installées.${NC}"
+  echo ""
 }
 
-create_dockerfile() {
-  echo -e "\n${BLUE}📂 Création du Dockerfile...${NC}"
-  cat <<EOF > Dockerfile
-RUN pip install --no-cache-dir \\
-    torch \\
-    transformers \\
-    openai-whisper \\
-    fastapi \\
-    uvicorn \\
-    python-multipart \\
-    pydantic
+check_files() {
+  echo -e "${BLUE}🔍 Vérification des fichiers essentiels...${NC}"
 
-COPY . /app
-WORKDIR /app
-CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
-EOF
-  echo -e "${GREEN}✅ Dockerfile créé.${NC}"
-}
-
-create_docker_compose() {
-  echo -e "${YELLOW}📂 Création de docker-compose.yml...${NC}"
-  cat <<EOF > docker-compose.yml
-version: '3.8'
-services:
-  assistant:
-    build: .
-    container_name: neo
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./data:/app/data
-    restart: always
-EOF
-  echo -e "${GREEN}✅ docker-compose.yml créé.${NC}"
-}
-
-create_server_py() {
-  echo -e "\n${BLUE}📄 Création de server.py...${NC}"
-  # (Le contenu complet du fichier server.py est déjà prêt dans ton code, je peux le regénérer à la demande)
-  # On écrira ici le fichier complet avec cat > server.py <<EOF
-  echo -e "${GREEN}✅ server.py créé.${NC}"
+  for file in Dockerfile docker-compose.yml requirements.txt main.py; do
+    if [ ! -f "$file" ]; then
+      echo -e "${RED}❌ Fichier manquant : $file${NC}"
+      echo -e "${YELLOW}⚠️ Merci de créer ce fichier avant de continuer.${NC}"
+      exit 1
+    else
+      echo -e "${GREEN}✅ $file trouvé.${NC}"
+    fi
+  done
+  echo ""
 }
 
 start_docker_compose() {
@@ -131,6 +112,7 @@ start_docker_compose() {
     echo -e "${YELLOW}🔄 Tentative de redémarrage...${NC}"
     docker-compose up -d
   fi
+  echo ""
 }
 
 verif_api() {
@@ -140,9 +122,25 @@ verif_api() {
     echo -e "${RED}❌ API NEO inaccessible.${NC}"
     echo -e "${YELLOW}🔄 Vérifie les logs : ${NC} docker logs neo"
   fi
+  echo ""
 }
 
 install_finish() {
   echo -e "\n${GREEN}🎉 Installation de NEO terminée avec succès !${NC}\n"
   echo -e "${BLUE}👉 Accès : http://localhost:8000 ou http://<IP>:8000${NC}"
+  echo ""
+}
+
+install_neo() {
+  verif_dpkg
+  update_system
+  install_dependance
+  verif_curl
+  install_docker
+  activ_env
+  install_pkg_python
+  check_files
+  start_docker_compose
+  verif_api
+  install_finish
 }
