@@ -1,3 +1,5 @@
+#!/bin/bash
+
 check_NEO() {
     echo -e "${BLUE}🔍 Vérification de l'environnement NEO...${NC}"
 
