@@ -48,7 +48,7 @@ set -e
     fi
 
 
-install_jarvis() {
+install_Neo() {
 
 ## ---  FULL UPDATE
     echo -e "${BLUE}🔄 Mise à jour du système...${NC}"
@@ -59,7 +59,7 @@ install_jarvis() {
     sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -qq > /dev/null 2>&1 &
     spinner $!
     echo -e "${GREEN}✅ apt-get upgrade terminé.${NC}"
-    echo -e "\n${BLUE}lation / mise à jour de JARVIS...${NC}"
+    echo -e "\n${BLUE}lation / mise à jour de Neo...${NC}"
 
 ## ---  INSTALL PYTHON & PIP / DOCKER
     sudo apt-get install -y -qq python3 python3-pip python3-venv curl docker.io docker-compose > /dev/null 2>&1 &
@@ -96,8 +96,8 @@ install_jarvis() {
 
     # Création et activation du venv
     echo -e "\n${GREEN}📦 Création de l’environnement virtuel Python...${NC}"
-    python3 -m venv jarvis-env
-    source jarvis-env/bin/activate
+    python3 -m venv Neo-env
+    source Neo-env/bin/activate
     echo -e "${GREEN}✅ Environnement virtuel activé.${NC}"
 
     # Installation des paquets Python
@@ -153,7 +153,7 @@ version: '3.8'
 services:
   assistant:
     build: .
-    container_name: jarvis
+    container_name: Neo
     ports:
       - "8000:8000"
     volumes:
@@ -177,7 +177,7 @@ import shutil
 import os
 
 # --- Initialisation de l'app ---
-app = FastAPI(title="Jarvis Assistant API", version="1.0")
+app = FastAPI(title="Neo Assistant API", version="1.0")
 
 # --- Chargement des modèles ---
 print("🔊 Chargement du modèle Whisper (transcription)...")
@@ -196,7 +196,7 @@ class Message(BaseModel):
 # --- Route racine ---
 @app.get("/")
 async def root():
-    return {"message": "Jarvis est en ligne."}
+    return {"message": "Neo est en ligne."}
 
 # --- Route de transcription audio ---
 @app.post("/transcribe")
@@ -250,31 +250,31 @@ echo -e "${GREEN}✅ server.py créé.${NC}"
     echo -e "${GREEN}✅ Docker-compose lancé avec succès.${NC}"
 
     # Vérification du conteneur
-    if docker ps | grep -q jarvis; then
-        echo -e "${GREEN}✅ Le conteneur JARVIS tourne correctement.${NC}"
+    if docker ps | grep -q Neo; then
+        echo -e "${GREEN}✅ Le conteneur Neo tourne correctement.${NC}"
     else
-        echo -e "${RED}❌ Le conteneur JARVIS ne tourne PAS.${NC}"
+        echo -e "${RED}❌ Le conteneur Neo ne tourne PAS.${NC}"
         echo -e "${YELLOW}🔄 Tentative de redémarrage...${NC}"
         docker-compose up -d
     fi
 
     # Vérification de l'accès à l'API
-    if curl -s http://localhost:8000 | grep -q "Jarvis"; then
-        echo -e "${GREEN}✅ API JARVIS accessible sur http://localhost:8000${NC}"
+    if curl -s http://localhost:8000 | grep -q "Neo"; then
+        echo -e "${GREEN}✅ API Neo accessible sur http://localhost:8000${NC}"
     else
-        echo -e "${RED}❌ API JARVIS inaccessible.${NC}"
-        echo -e "${YELLOW}🔄 Vérifie les logs avec :${NC} docker logs jarvis"
+        echo -e "${RED}❌ API Neo inaccessible.${NC}"
+        echo -e "${YELLOW}🔄 Vérifie les logs avec :${NC} docker logs Neo"
     fi
 
 echo -e "\n${GREEN}🎉 Installation et validation terminées !${NC}\n"
 
     echo -e "\n${BLUE}✅ Installation et lancement terminés.${NC}"
-    echo -e "${BLUE}✨ Ton assistant JARVIS tourne maintenant en arrière-plan !${NC}"
+    echo -e "${BLUE}✨ Ton assistant Neo tourne maintenant en arrière-plan !${NC}"
     echo -e "${BLUE}👉 Accède à http://localhost:8000 ou http://<IP_de_ton_serveur>:8000${NC}"
 }
 
-check_jarvis() {
-    echo -e "${BLUE}🔍 Vérification de l'environnement JARVIS...${NC}"
+check_Neo() {
+    echo -e "${BLUE}🔍 Vérification de l'environnement Neo...${NC}"
 
     echo -e "\n⚙️  Vérification des outils système..."
     for tool in python3 pip docker docker-compose ffmpeg curl; do
@@ -286,11 +286,11 @@ check_jarvis() {
     done
 
     echo -e "\n📦 Activation de l’environnement virtuel Python (si disponible)..."
-    if [ -f jarvis-env/bin/activate ]; then
-        source jarvis-env/bin/activate
-        echo -e "✅ Environnement 'jarvis-env' activé."
+    if [ -f Neo-env/bin/activate ]; then
+        source Neo-env/bin/activate
+        echo -e "✅ Environnement 'Neo-env' activé."
     else
-        echo -e "❌ Environnement 'jarvis-env' non trouvé."
+        echo -e "❌ Environnement 'Neo-env' non trouvé."
     fi
 
     echo -e "\n🐍 Vérification des bibliothèques Python..."
@@ -304,20 +304,20 @@ check_jarvis() {
     done
 
     echo -e "\n🐳 Vérification du conteneur Docker..."
-    if docker ps --filter "name=jarvis" --filter "status=running" | grep jarvis >/dev/null; then
-        echo -e "✅ Conteneur 'jarvis' trouvé. Statut : running"
+    if docker ps --filter "name=Neo" --filter "status=running" | grep Neo >/dev/null; then
+        echo -e "✅ Conteneur 'Neo' trouvé. Statut : running"
     else
-        echo -e "❌ Conteneur 'jarvis' non trouvé ou arrêté."
+        echo -e "❌ Conteneur 'Neo' non trouvé ou arrêté."
     fi
 
     echo -e "\n🎙️ Test du chargement du modèle Whisper..."
     python -c "import whisper; whisper.load_model('base')" >/dev/null 2>&1 && echo -e "✅ Modèle Whisper chargé avec succès." || echo -e "❌ Échec du chargement du modèle Whisper."
 
-    echo -e "\n🌐 Test de l'API JARVIS (http://localhost:8000)..."
-    if curl --max-time 5 -s http://localhost:8000 | grep -q 'Jarvis est en ligne'; then
-        echo -e "✅ API JARVIS répond bien sur le port 8000."
+    echo -e "\n🌐 Test de l'API Neo (http://localhost:8000)..."
+    if curl --max-time 5 -s http://localhost:8000 | grep -q 'Neo est en ligne'; then
+        echo -e "✅ API Neo répond bien sur le port 8000."
     else
-        echo -e "❌ API JARVIS ne répond pas sur http://localhost:8000 (le conteneur est peut-être arrêté ou crashé)."
+        echo -e "❌ API Neo ne répond pas sur http://localhost:8000 (le conteneur est peut-être arrêté ou crashé)."
     fi
 
     echo -e "\n🧪 Fin des vérifications."
@@ -326,23 +326,23 @@ check_jarvis() {
 
 # --- Appel direct depuis la ligne de commande ou Make ---
 if [[ "$1" == "install" ]]; then
-    install_jarvis
+    install_Neo
     exit 0
 elif [[ "$1" == "check" ]]; then
-    check_jarvis
+    check_Neo
     exit 0
 fi
 
 # --- Menu ---
 while true; do
-    echo -e "\n${YELLOW}==== Menu JARVIS ====${NC}"
-    echo "1) Installer / Réinstaller JARVIS"
+    echo -e "\n${YELLOW}==== Menu Neo ====${NC}"
+    echo "1) Installer / Réinstaller Neo"
     echo "2) Vérifier l'installation actuelle"
     echo "3) Quitter"
     read -rp "Choisis une option (1-3) : " choice
     case $choice in
-        1) install_jarvis ;;
-        2) check_jarvis ;;
+        1) install_Neo ;;
+        2) check_Neo ;;
         3) echo "Bye !" ; exit 0 ;;
         *) echo -e "${RED}Option invalide.${NC}" ;;
     esac
