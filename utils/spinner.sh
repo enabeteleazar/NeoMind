@@ -1,33 +1,32 @@
 #!/bin/bash
 
-# Fonction générique pour exécuter une commande avec un spinner Unicode animé
-run_with_spinner() {
-    local cmd="$1"
-    local msg="${2:-Exécution en cours...}"
-    local endmsg="${3:-✅ Terminé}"
-    local delay=0.1
-    local spinstr=(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏)
+spinner_pid=0
 
-    echo -ne "${msg} "
+start_spinner() {
+  local message="$1"
+  echo -ne "$message..."
+  spin &
+  spinner_pid=$!
+  disown
+}
 
-    tput civis  # cache le curseur
+stop_spinner() {
+  local exit_code=$1
+  kill "$spinner_pid" > /dev/null 2>&1
+  wait "$spinner_pid" 2>/dev/null
+  if [[ $exit_code -eq 0 ]]; then
+    echo -e " ✅"
+  else
+    echo -e " ❌"
+  fi
+}
 
-    # Lance la commande en arrière-plan
-    bash -c "$cmd" > /dev/null 2>&1 &
-    local pid=$!
-
-    local i=0
-    while kill -0 "$pid" 2>/dev/null; do
-        printf "\b${spinstr[i]}"
-        i=$(((i + 1) % ${#spinstr[@]}))
-        sleep $delay
+spin() {
+  local -a spinners=('⠋' '⠙' '⠸' '⠴' '⠦' '⠇')
+  while true; do
+    for i in "${spinners[@]}"; do
+      echo -ne "\r$i"
+      sleep 0.1
     done
-
-    wait $pid
-    local exit_code=$?
-
-    printf "\b%s\n" "$endmsg"
-    tput cnorm  # remet le curseur
-
-    return $exit_code
+  done
 }
