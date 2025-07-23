@@ -1,7 +1,7 @@
 # Makefile pour Neo Assistant
 
 # --- Variables
-SCRIPT=neo_setup.sh
+SCRIPT=main.sh
 ENV_DIR=Neo-env
 DOCKER_COMPOSE_CMD := $(shell command -v docker-compose >/dev/null 2>&1 && echo docker-compose || echo docker compose)
 
