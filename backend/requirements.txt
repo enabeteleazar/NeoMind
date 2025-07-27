@@ -1,0 +1,35 @@
+# Web API
+fastapi==0.110.0
+uvicorn[standard]==0.29.0
+
+# LLM & NLP
+transformers==4.41.1
+torch>=2.2.0
+sentencepiece>=0.1.99
+
+# STT (Speech to Text, si Whisper utilisé)
+openai-whisper==20231117
+
+# System utils
+psutil>=5.9.0
+shutilwhich>=1.1.0
+
+# QR Code (utile pour la génération d'accès rapide)
+qrcode==7.4.2
+pillow==10.3.0
+
+# Telegram Bot (si usage prévu)
+python-telegram-bot==20.8
+
+# Data handling / JSON / I/O
+aiofiles==23.2.1
+requests==2.31.0
+python-multipart==0.0.9
+pydantic==2.7.3
+typing-extensions>=4.11.0
+
+# Environnement (optionnel, utile pour .env ou config)
+python-dotenv==1.0.1
+
+# Optionnel : pour compatibilité audio ou extra
+numpy>=1.25.0
