@@ -118,7 +118,7 @@ verif_docker() {
   fi
   echo ""
 }
-
+ 
 activ_env() {
   echo -e "\n${YELLOW}📦 Création et activation de l’environnement virtuel Python...${NC}"
 
@@ -166,9 +166,10 @@ install_pkg_python() {
   fi
   echo -e "${GREEN}✅ pip mis à jour.${NC}"
 
-  start_spinner "📦 Installation des packages : torch, transformers, whisper, fastapi, uvicorn, ffmpeg-python"
-  pip install --default-timeout=100 --timeout=100 --retries=10 \
-    torch transformers openai-whisper fastapi uvicorn ffmpeg-python > /dev/null 2>&1
+  start_spinner "📦 Installation des packages necessaires."  
+  mkdir -p ~/tmp
+  echo "📦 Installation des dépendances depuis backend/requirements.txt..."
+  TMPDIR=~/tmp pip install --default-timeout=100 --timeout=100 --retries=10 -r backend/requirements.txt > /dev/null 2>&1
   exit_code=$?
   stop_spinner $exit_code
   if [[ $exit_code -ne 0 ]]; then
@@ -220,7 +221,7 @@ start_docker_compose() {
   stop_spinner $?
   
   # Pause courte pour laisser docker démarrer les conteneurs
-  sleep 3
+  sleep 5
 
   # Vérification que le conteneur 'neo' tourne bien
   if docker ps --filter "name=neo" --filter "status=running" | grep -q neo; then
@@ -249,7 +250,7 @@ verif_api() {
   if [[ $exit_code -eq 0 ]]; then
     if grep -q "Neo" /tmp/neo_api_response.txt; then
       echo -e "\n${GREEN}🎉 Installation de NEO terminée avec succès !${NC}\n"
-      echo -e "${BLUE}👉 Accès : http://localhost:8000 ou http://<IP>:8000${NC}\n"
+      echo -e "${BLUE}👉 Accès : http://localhost:8000${NC}\n"
     else
       echo -e "${RED}❌ API NEO accessible mais réponse inattendue.${NC}"
       echo -e "${YELLOW}🔄 Vérifie les logs : docker logs neo${NC}"
@@ -268,8 +269,6 @@ install_neo() {
   update_system
   install_dependance
   verif_curl
-
-  
   verif_docker
   activ_env
   install_pkg_python
