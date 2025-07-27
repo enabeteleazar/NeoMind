@@ -1,4 +1,4 @@
-check_Neo() {
+verify_Neo() {
     echo -e "${BLUE}🔍 Vérification de l'environnement Neo...${NC}"
 
     echo -e "\n⚙️  Vérification des outils système..."
