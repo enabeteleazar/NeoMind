@@ -1,4 +1,5 @@
 #!/bin/bash
+#build: 20250805
 
 # Chargement des modules
 source utils/colors.sh
