@@ -14,7 +14,7 @@ help:
 	@echo "  make install         # Exécute le script avec menu interactif"
 	@echo "  make verify          # Lance uniquement la fonction check_Neo()"
 	@echo "  make clean           # Supprime l’environnement Python et les containers Docker"
-#	@echo "  make start           # Démarre le conteneur Docker Neo"
+	@echo "  make start           # Démarre le conteneur Docker Neo"
 #	@echo "  make stop            # Arrête le conteneur Docker Neo"
 #	@echo "  make restart         # Redémarre le conteneur Docker Neo"
 #	@echo "  make logs            # Affiche les logs du conteneur Neo"
@@ -47,6 +47,7 @@ clean:
 start:
 	@echo "🚀 Démarrage du conteneur Neo..."
 	@$(DOCKER_COMPOSE_CMD) up -d
+	
 
 stop:
 	@echo "⏹️  Arrêt du conteneur Neo..."
