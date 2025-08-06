@@ -2,7 +2,7 @@
 
 # --- Variables
 SCRIPT=main.sh
-ENV_DIR=Neo-env
+ENV_DIR=neo-env
 DOCKER_COMPOSE_CMD := $(shell command -v docker-compose >/dev/null 2>&1 && echo docker-compose || echo docker compose)
 
 # --- Cibles disponibles
@@ -12,37 +12,30 @@ DOCKER_COMPOSE_CMD := $(shell command -v docker-compose >/dev/null 2>&1 && echo 
 help:
 	@echo "🛠️  Commandes disponibles :"
 	@echo "  make install         # Exécute le script avec menu interactif"
-	@echo "  make install-nc      # Exécute le script sans couleurs (option --no-color)"
-	@echo "  make install-core    # Lance uniquement la fonction install_Neo()"
-	@echo "  make check           # Lance uniquement la fonction check_Neo()"
+	@echo "  make verify          # Lance uniquement la fonction check_Neo()"
 	@echo "  make clean           # Supprime l’environnement Python et les containers Docker"
-	@echo "  make start           # Démarre le conteneur Docker Neo"
-	@echo "  make stop            # Arrête le conteneur Docker Neo"
-	@echo "  make restart         # Redémarre le conteneur Docker Neo"
-	@echo "  make logs            # Affiche les logs du conteneur Neo"
-	@echo "  make build           # Reconstruit l’image Docker Neo"
-	@echo "  make test            # Exécute les tests unitaires avec pytest"
-	@echo "  make lint            # Analyse le code avec flake8"
+#	@echo "  make start           # Démarre le conteneur Docker Neo"
+#	@echo "  make stop            # Arrête le conteneur Docker Neo"
+#	@echo "  make restart         # Redémarre le conteneur Docker Neo"
+#	@echo "  make logs            # Affiche les logs du conteneur Neo"
+#	@echo "  make build           # Reconstruit l’image Docker Neo"
+#	@echo "  make test            # Exécute les tests unitaires avec pytest"
+#	@echo "  make lint            # Analyse le code avec flake8"
 
 # --- Installation interactive avec menu
 install:
 	@chmod +x $(SCRIPT)
-	@bash $(SCRIPT)
+	@bash $(SCRIPT) install
 
 # --- Installation sans couleur (prévoir la gestion de --no-color dans ton script)
 install-nc:
 	@chmod +x $(SCRIPT)
-	@bash $(SCRIPT) --no-color
-
-# --- Installation directe sans menu
-install-core:
-	@chmod +x $(SCRIPT)
-	@bash $(SCRIPT) install
+	@bash $(SCRIPT) installl--no-color
 
 # --- Vérification de l’installation sans menu
 check:
 	@chmod +x $(SCRIPT)
-	@bash $(SCRIPT) check
+	@bash $(SCRIPT) verify_neo
 
 # --- Nettoyage complet
 clean:
