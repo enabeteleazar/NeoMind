@@ -1,5 +1,5 @@
 #!/bin/bash
-#build: 20250805
+#build: 20250806
 
 # Chargement des modules
 source utils/colors.sh
@@ -11,7 +11,7 @@ main_menu() {
   clear
   echo -e "${CYAN}"
   echo "╔════════════════════════════════════════╗"
-  echo "║        🧠 INSTALLATEUR NEO v1.1.0      ║"
+  echo "║        🧠 INSTALLATEUR NEO v1.1.1      ║"
   echo "╚════════════════════════════════════════╝"
   echo -e "${NC}"
 
@@ -28,5 +28,14 @@ main_menu() {
   esac
 }
 
+
+if["$1" == "install"]; then
+  install_neo
+elif ["$1" == "check"]; then
+  verify_neo
+else
+  echo -e "${RED}❌ Argument invalide. Utilise 'install'.${NC}"
+  exit 1
+fi
 # Lancement du menu
 main_menu
